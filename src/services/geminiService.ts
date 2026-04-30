@@ -20,8 +20,29 @@ export interface ChatMessage {
   text: string;
 }
 
+const MODELS = ["gemini-3.1-pro-preview", "gemini-3.1-flash-lite-preview"];
+
+async function generateContentWithRetry(ai: GoogleGenAI, contents: any, config: any) {
+  for (const model of MODELS) {
+    try {
+      const response = await ai.models.generateContent({
+        model,
+        contents,
+        config
+      });
+      return response.text;
+    } catch (error: any) {
+      if (error.status === 429 || (error.message && error.message.includes('429'))) {
+        console.warn(`Model ${model} failed with quota exceeded. Trying next...`);
+        continue;
+      }
+      throw error;
+    }
+  }
+  throw new Error("All models failed due to quota or other issues.");
+}
+
 export const generateGameCode = async (prompt: string, history: ChatMessage[]) => {
-  const model = "gemini-3.1-pro-preview"; 
   const ai = getAI();
   
   const systemInstruction = `You are a world-class Game Developer and AI Coding Assistant. 
@@ -44,25 +65,13 @@ CRITICAL INSTRUCTIONS FOR UPDATING CODE:
     parts: [{ text: prompt }]
   });
 
-  try {
-    const response = await ai.models.generateContent({
-      model,
-      contents,
-      config: {
-        systemInstruction,
-        temperature: 0.7,
-      }
-    });
-
-    return response.text;
-  } catch (error) {
-    console.error("Gemini API Error:", error);
-    throw error;
-  }
+  return await generateContentWithRetry(ai, contents, {
+    systemInstruction,
+    temperature: 0.7,
+  });
 };
 
 export const getPlan = async (gameDescription: string) => {
-  const model = "gemini-3.1-pro-preview";
   const ai = getAI();
   
   const prompt = `Create a detailed development plan for the following game concept: "${gameDescription}". 
@@ -73,18 +82,7 @@ Break it down into:
 4. Potential Challenges
 Return the plan in Markdown format.`;
 
-  try {
-    const response = await ai.models.generateContent({
-      model,
-      contents: prompt,
-      config: {
-        systemInstruction: "You are a technical project manager for games."
-      }
-    });
-
-    return response.text;
-  } catch (error) {
-    console.error("Gemini API Error:", error);
-    throw error;
-  }
+  return await generateContentWithRetry(ai, prompt, {
+    systemInstruction: "You are a technical project manager for games."
+  });
 };
