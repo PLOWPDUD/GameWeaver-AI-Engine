@@ -260,7 +260,7 @@ draw();`
       setMessages(prev => [...prev, {
         id: (Date.now() + 1).toString(),
         role: 'model',
-        text: "System Error: I encountered an issue connecting to my intelligence core. Please try again.",
+        text: `System Error: ${error instanceof Error ? error.message : 'Unknown error'}`,
         timestamp: Date.now()
       }]);
     } finally {
