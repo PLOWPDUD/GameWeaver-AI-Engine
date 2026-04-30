@@ -1,0 +1,9 @@
+{
+  "name": "GameWeaver AI Builder",
+  "description": "An AI-powered game development studio with chat-driven coding, file management, and instant game preview.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "AI_Chat",
+    "Code_Generation"
+  ]
+}
