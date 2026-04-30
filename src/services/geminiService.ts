@@ -1,6 +1,18 @@
 import { GoogleGenAI } from "@google/genai";
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+let envApiKey = '';
+try {
+  envApiKey = process.env.GEMINI_API_KEY as string;
+} catch (e) {
+  // Ignore
+}
+const apiKey = import.meta.env?.VITE_GEMINI_API_KEY || envApiKey || '';
+
+if (!apiKey) {
+  console.warn("⚠️ GEMINI_API_KEY is not defined. AI features will not work until you provide an API key.");
+}
+
+const ai = new GoogleGenAI({ apiKey: apiKey || 'missing-key' });
 
 export interface ChatMessage {
   role: 'user' | 'model';
