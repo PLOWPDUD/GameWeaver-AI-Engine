@@ -1,12 +1,8 @@
 import { GoogleGenAI } from "@google/genai";
 
-let envApiKey = '';
-try {
-  envApiKey = process.env.GEMINI_API_KEY as string;
-} catch (e) {
-  // Ignore
-}
-const apiKey = import.meta.env?.VITE_GEMINI_API_KEY || envApiKey || '';
+// Access environment variables securely
+// Note: Client-side apps require VITE_ prefix for Vite environment variable exposure
+const apiKey = import.meta.env.VITE_GEMINI_API_KEY || (typeof process !== 'undefined' ? process.env.GEMINI_API_KEY : '');
 
 if (!apiKey) {
   console.warn("⚠️ GEMINI_API_KEY is not defined. AI features will not work until you provide an API key.");
