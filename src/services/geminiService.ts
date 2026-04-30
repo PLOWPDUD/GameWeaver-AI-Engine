@@ -1,14 +1,19 @@
 import { GoogleGenAI } from "@google/genai";
 
-// Access environment variables securely
-// Note: Client-side apps require VITE_ prefix for Vite environment variable exposure
-const apiKey = import.meta.env.VITE_GEMINI_API_KEY || (typeof process !== 'undefined' ? process.env.GEMINI_API_KEY : '');
+let aiClient: GoogleGenAI | null = null;
 
-if (!apiKey) {
-  console.warn("⚠️ GEMINI_API_KEY is not defined. AI features will not work until you provide an API key.");
+function getAI(): GoogleGenAI {
+  if (!aiClient) {
+    const apiKey = import.meta.env.VITE_GEMINI_API_KEY || (typeof process !== 'undefined' ? process.env.GEMINI_API_KEY : '');
+    
+    if (!apiKey) {
+      throw new Error("GEMINI_API_KEY is not defined. AI features require an API key.");
+    }
+    
+    aiClient = new GoogleGenAI({ apiKey });
+  }
+  return aiClient;
 }
-
-const ai = new GoogleGenAI({ apiKey: apiKey || 'missing-key' });
 
 export interface ChatMessage {
   role: 'user' | 'model';
@@ -17,6 +22,7 @@ export interface ChatMessage {
 
 export const generateGameCode = async (prompt: string, history: ChatMessage[]) => {
   const model = "gemini-3.1-pro-preview"; 
+  const ai = getAI();
   
   const systemInstruction = `You are a world-class Game Developer and AI Coding Assistant. 
 Your task is to help the user build a game from scratch or modify an existing one.
@@ -50,21 +56,6 @@ CRITICAL INSTRUCTIONS FOR UPDATING CODE:
 
     return response.text;
   } catch (error) {
-    if (error && typeof error === 'object' && 'code' in error && (error as any).code === 403) {
-      console.error("Gemini 403 error. Trying fallback model...");
-      // Try fallback if primary fails
-      try {
-        const fallbackResponse = await ai.models.generateContent({
-          model: "gemini-3.1-pro-preview",
-          contents,
-          config: { systemInstruction }
-        });
-        return fallbackResponse.text;
-      } catch (fallbackError) {
-        console.error("All Gemini calls failed:", fallbackError);
-        throw fallbackError;
-      }
-    }
     console.error("Gemini API Error:", error);
     throw error;
   }
@@ -72,6 +63,7 @@ CRITICAL INSTRUCTIONS FOR UPDATING CODE:
 
 export const getPlan = async (gameDescription: string) => {
   const model = "gemini-3.1-pro-preview";
+  const ai = getAI();
   
   const prompt = `Create a detailed development plan for the following game concept: "${gameDescription}". 
 Break it down into:
